@@ -2,7 +2,7 @@
 
 A self-contained, browser-based Gantt chart editor for managing multi-project timelines with tasks, deliverables, and work packages.
 
-![Simple Gantt Editor](screenshoot.png)
+![Simple Gantt Editor](screenshot.png)
 
 ## Features
 
