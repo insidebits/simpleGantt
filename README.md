@@ -2,15 +2,19 @@
 
 A self-contained, browser-based Gantt chart editor for managing multi-project timelines with tasks, deliverables, and work packages.
 
+![Simple Gantt Editor](screenshoot.png)
+
 ## Features
 
 - **Multi-project support** — manage multiple projects in a single file
-- **Work Packages (WP)** — group tasks by WP, with editable names per project
+- **Work Packages (WP)** — group tasks by WP, with editable names and responsible per project
 - **Deliverables** — milestone markers on the Gantt chart, visually differentiated (past vs future)
-- **Partner filtering** — filter tasks by partner participation
+- **Responsible tracking** — assign responsible to tasks and deliverables
+- **Responsible filtering** — filter tasks by responsible
 - **Collapsible WP groups** — collapse/expand WP sections in the Gantt
 - **Today marker** — shows current project month with a flag indicator
-- **Data editor** — inline editing of WP names, tasks, and deliverables
+- **Calendar dates** — shows actual calendar dates (e.g., "May 2025") alongside project months in the editor
+- **Data editor** — inline editing of WP names, responsible, tasks, and deliverables
 - **Import/Export** — JSON format for portability
 - **Save as HTML** — generates a self-contained HTML snapshot with all project data embedded
 - **LocalStorage persistence** — data persists across browser sessions
@@ -32,7 +36,7 @@ A self-contained, browser-based Gantt chart editor for managing multi-project ti
 ### Keyboard & navigation
 
 - **WP filter dropdown** — filter the Gantt to show only tasks from a specific WP
-- **Partner filter dropdown** — filter by partner participation
+- **Responsible filter dropdown** — filter tasks by responsible
 - **Click WP header** — collapse/expand a WP group
 - **Drag column edges** — resize table columns in the data editor
 - **Drag left panel edge** — resize the label panel
