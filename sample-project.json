@@ -26,7 +26,7 @@
       "end": 4,
       "partners": ["Acme Corp", "Globex Inc", "Initech"],
       "deliverables": [
-        { "id": "D1.1", "m": 4, "leader": "Acme Corp", "label": "State of the art report" }
+        { "id": "D1.1", "m": 4, "responsible": "Acme Corp", "label": "State of the art report" }
       ]
     },
     {
@@ -37,7 +37,7 @@
       "end": 6,
       "partners": ["Acme Corp", "Globex Inc", "Initech"],
       "deliverables": [
-        { "id": "D1.2", "m": 6, "leader": "Globex Inc", "label": "Requirements specification" }
+        { "id": "D1.2", "m": 6, "responsible": "Globex Inc", "label": "Requirements specification" }
       ]
     },
     {
@@ -48,8 +48,8 @@
       "end": 10,
       "partners": ["Acme Corp", "Umbrella Ltd", "Globex Inc"],
       "deliverables": [
-        { "id": "D2.1", "m": 8, "leader": "Acme Corp", "label": "Architecture document v1" },
-        { "id": "D2.2", "m": 10, "leader": "Acme Corp", "label": "Architecture document final" }
+        { "id": "D2.1", "m": 8, "responsible": "Acme Corp", "label": "Architecture document v1" },
+        { "id": "D2.2", "m": 10, "responsible": "Acme Corp", "label": "Architecture document final" }
       ]
     },
     {
@@ -60,8 +60,8 @@
       "end": 12,
       "partners": ["Umbrella Ltd", "Globex Inc"],
       "deliverables": [
-        { "id": "D2.3", "m": 9, "leader": "Umbrella Ltd", "label": "Wireframes & mockups" },
-        { "id": "D2.4", "m": 12, "leader": "Umbrella Ltd", "label": "Interactive prototype" }
+        { "id": "D2.3", "m": 9, "responsible": "Umbrella Ltd", "label": "Wireframes & mockups" },
+        { "id": "D2.4", "m": 12, "responsible": "Umbrella Ltd", "label": "Interactive prototype" }
       ]
     },
     {
@@ -72,8 +72,8 @@
       "end": 18,
       "partners": ["Acme Corp", "Initech", "Umbrella Ltd"],
       "deliverables": [
-        { "id": "D3.1", "m": 12, "leader": "Initech", "label": "API specification" },
-        { "id": "D3.2", "m": 18, "leader": "Initech", "label": "Backend release v1.0" }
+        { "id": "D3.1", "m": 12, "responsible": "Initech", "label": "API specification" },
+        { "id": "D3.2", "m": 18, "responsible": "Initech", "label": "Backend release v1.0" }
       ]
     },
     {
@@ -84,8 +84,8 @@
       "end": 20,
       "partners": ["Acme Corp", "Umbrella Ltd"],
       "deliverables": [
-        { "id": "D3.3", "m": 16, "leader": "Umbrella Ltd", "label": "Frontend alpha release" },
-        { "id": "D3.4", "m": 20, "leader": "Umbrella Ltd", "label": "Frontend v1.0" }
+        { "id": "D3.3", "m": 16, "responsible": "Umbrella Ltd", "label": "Frontend alpha release" },
+        { "id": "D3.4", "m": 20, "responsible": "Umbrella Ltd", "label": "Frontend v1.0" }
       ]
     },
     {
@@ -96,8 +96,8 @@
       "end": 20,
       "partners": ["Globex Inc", "Initech", "Umbrella Ltd"],
       "deliverables": [
-        { "id": "D4.1", "m": 16, "leader": "Globex Inc", "label": "Test plan & coverage report" },
-        { "id": "D4.2", "m": 20, "leader": "Globex Inc", "label": "Integration test results" }
+        { "id": "D4.1", "m": 16, "responsible": "Globex Inc", "label": "Test plan & coverage report" },
+        { "id": "D4.2", "m": 20, "responsible": "Globex Inc", "label": "Integration test results" }
       ]
     },
     {
@@ -108,7 +108,7 @@
       "end": 22,
       "partners": ["Acme Corp", "Globex Inc", "Initech"],
       "deliverables": [
-        { "id": "D4.3", "m": 22, "leader": "Acme Corp", "label": "UAT sign-off report" }
+        { "id": "D4.3", "m": 22, "responsible": "Acme Corp", "label": "UAT sign-off report" }
       ]
     },
     {
@@ -119,7 +119,7 @@
       "end": 23,
       "partners": ["Acme Corp", "Globex Inc", "Initech", "Umbrella Ltd"],
       "deliverables": [
-        { "id": "D5.1", "m": 23, "leader": "Acme Corp", "label": "Deployment runbook" }
+        { "id": "D5.1", "m": 23, "responsible": "Acme Corp", "label": "Deployment runbook" }
       ]
     },
     {
@@ -130,7 +130,7 @@
       "end": 24,
       "partners": ["Acme Corp", "Globex Inc", "Initech", "Umbrella Ltd"],
       "deliverables": [
-        { "id": "D5.2", "m": 24, "leader": "Initech", "label": "Maintenance handover document" }
+        { "id": "D5.2", "m": 24, "responsible": "Initech", "label": "Maintenance handover document" }
       ]
     }
   ]

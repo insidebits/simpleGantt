@@ -127,8 +127,8 @@ table.data .del-row{width:28px;text-align:center}
 <div class="controls">
   <label for="wpFilter">WP:</label>
   <select id="wpFilter"><option value="all">All WPs</option></select>
-  <label for="partnerFilter">Partner:</label>
-  <select id="partnerFilter"><option value="all">All Partners</option></select>
+  <label for="partnerFilter">Responsible:</label>
+  <select id="partnerFilter"><option value="all">All Responsibles</option></select>
   <span style="color:var(--text-dark-3);font-size:.85rem" id="taskCount"></span>
   <span style="margin-left:auto"></span>
   <span id="todayInfo" style="font-size:.85rem;color:#2c3e50"></span>
@@ -176,10 +176,11 @@ table.data .del-row{width:28px;text-align:center}
   </div>
   <div class="editor-section">
     <h3>Work Packages</h3>
-    <table class="data" id="wpTable" style="max-width:400px">
+    <table class="data" id="wpTable" style="max-width:500px">
       <thead><tr>
         <th style="width:60px">WP</th>
         <th>Name</th>
+        <th>Responsible</th>
       </tr></thead>
       <tbody id="wpBody"></tbody>
     </table>
@@ -193,7 +194,7 @@ table.data .del-row{width:28px;text-align:center}
         <th>Label</th>
         <th style="width:40px">Start M</th>
         <th style="width:40px">End M</th>
-        <th>Partners</th>
+        <th>Responsible</th>
         <th style="width:28px"></th>
       </tr></thead>
       <tbody id="taskBody"></tbody>
@@ -206,7 +207,7 @@ table.data .del-row{width:28px;text-align:center}
         <th style="width:60px">Task ID</th>
         <th style="width:60px">Del ID</th>
         <th style="width:40px">Month</th>
-        <th style="width:80px">Leader</th>
+        <th style="width:80px">Responsible</th>
         <th>Label</th>
         <th style="width:28px"></th>
       </tr></thead>
@@ -276,7 +277,7 @@ function buildDemoTasks() {
   return raw.map(r => ({
     id:r.id, wp:r.wp, label:r.label, start:r.s, end:r.e,
     partners: [...(DEMO_WPP[r.wp]||[])],
-    deliverables: r.del.map(d => ({id:d.id, m:d.m, leader:d.l, label:d.lb}))
+    deliverables: r.del.map(d => ({id:d.id, m:d.m, responsible:d.l, label:d.lb}))
   }));
 }
 
@@ -291,6 +292,11 @@ function getCalMonthRef(startDate, pm) {
   const d = new Date(startDate);
   d.setMonth(d.getMonth() + pm - 1);
   return { name: MONTH_NAMES[d.getMonth()], year: d.getFullYear() };
+}
+
+function formatMonthDate(startDate, monthNum) {
+  const cal = getCalMonthRef(startDate, monthNum);
+  return cal.name + ' ' + cal.year;
 }
 
 function getMonthFrac(startDate) {
@@ -342,6 +348,7 @@ class Store {
     this.projects = [{
       id: uid(), name: 'Sample Project', startDate:'2025-01-01', komDate:'2025-02-15', months:24,
       wpNames: clone(WP_NAMES),
+      wpResponsible: {},
       wpParticipants: clone(DEMO_WPP),
       wpCollapsed: {},
       tasks: buildDemoTasks()
@@ -358,8 +365,8 @@ class Store {
   setCurrent(id) { this.currentId = id; this._emit(); }
 
   // Project CRUD
-  addProject(name, tasks, wpp, startDate, komDate, months, wpNames) {
-    const p = { id:uid(), name:name||'Untitled', tasks:tasks||[], wpNames:wpNames||clone(WP_NAMES), wpParticipants:wpp||{}, wpCollapsed:{}, startDate:startDate||'2024-01-01', komDate:komDate||null, months:months||24 };
+  addProject(name, tasks, wpp, startDate, komDate, months, wpNames, wpResponsible) {
+    const p = { id:uid(), name:name||'Untitled', tasks:tasks||[], wpNames:wpNames||clone(WP_NAMES), wpResponsible:wpResponsible||{}, wpParticipants:wpp||{}, wpCollapsed:{}, startDate:startDate||'2024-01-01', komDate:komDate||null, months:months||24 };
     this.projects.push(p);
     this.currentId = p.id;
     this.save(); this._emit();
@@ -478,6 +485,14 @@ class Store {
     if (!c) return;
     if (!c.wpNames) c.wpNames = {...WP_NAMES};
     c.wpNames[wp] = name;
+    this.save(); this._emit();
+  }
+  getWPResponsible() { const c = this.current(); return (c && c.wpResponsible) ? c.wpResponsible : {}; }
+  updateWPResponsible(wp, responsible) {
+    const c = this.current();
+    if (!c) return;
+    if (!c.wpResponsible) c.wpResponsible = {};
+    c.wpResponsible[wp] = responsible;
     this.save(); this._emit();
   }
   getStartDate() { const c = this.current(); return c ? c.startDate : '2024-01-01'; }
@@ -695,11 +710,13 @@ class GanttChart {
     }
 
     // WP label
+    const wpResp = this.store.getWPResponsible()[group.wp];
+    const respStr = wpResp ? ' (' + wpResp + ')' : '';
     this.svg.appendChild(el('text', {
       x: this.PAD_L + 8, y: y + ROW_H / 2 + 3,
       'font-size': '12px', 'font-weight': '700',
       fill: '#1a2b3c'
-    }, group.wp + ' \u2014 ' + (this.store.getWPNames()[group.wp] || group.wp) + ' (' + group.tasks.length + ' tasks)'));
+    }, group.wp + ' \u2014 ' + (this.store.getWPNames()[group.wp] || group.wp) + respStr + ' (' + group.tasks.length + ' tasks)'));
 
     // Collapse toggle
     this.svg.appendChild(el('text', {
@@ -733,8 +750,8 @@ class GanttChart {
     const pn = row.partners||[];
     const ps = pn.slice(0,14).join(', ')+(pn.length>14?' +'+(pn.length-14)+' more':'');
     const pi = ptF!=='all'?`<br><span class="tt-part">Filtered: ${ptF}</span>`:'';
-    const dd = (row.deliverables||[]).map(d=>`<br>\u25B8 ${d.id} (M${d.m}) \u2014 ${d.leader}: ${d.label}`).join('');
-    this._onTooltip(bar, `<div class="tt-title">${row.id}</div>${row.label}<br><span class="tt-wp">${row.wp}</span> \u00B7 M${row.start}\u2013M${row.end} \u00B7 ${pn.length} partners${pi}<br><span style="color:#85929e">${ps}</span>${dd?'<br><br><strong>Deliverables:</strong>'+dd:''}`);
+    const dd = (row.deliverables||[]).map(d=>`<br>\u25B8 ${d.id} (M${d.m}) \u2014 ${d.responsible}: ${d.label}`).join('');
+    this._onTooltip(bar, `<div class="tt-title">${row.id}</div>${row.label}<br><span class="tt-wp">${row.wp}</span> \u00B7 M${row.start}\u2013M${row.end} \u00B7 ${pn.length} responsible${pi}<br><span style="color:#85929e">${ps}</span>${dd?'<br><br><strong>Deliverables:</strong>'+dd:''}`);
     this.svg.appendChild(bar);
 
     const placed = {};
@@ -752,7 +769,7 @@ class GanttChart {
       const dia = el('polygon', {points:`${dx},${dy-s} ${dx+s},${dy} ${dx},${dy+s} ${dx-s},${dy}`,
         fill:diamondFill, stroke:diamondStroke, 'stroke-width':'4', 'stroke-linejoin':'round', class:'milestone'});
       const statusNote = isPast ? '<br><span style="color:#999">(delivered)</span>' : '';
-      this._onTooltip(dia, `<div class="tt-title">${d.id}</div>${d.label}<br>Leader: ${d.leader} \u00B7 M${d.m}${statusNote}`);
+      this._onTooltip(dia, `<div class="tt-title">${d.id}</div>${d.label}<br>Responsible: ${d.responsible} \u00B7 M${d.m}${statusNote}`);
       this.svg.appendChild(dia);
       const txt = el('text', {x:dx+s+2, y:dy+2, 'font-size':'13px','font-weight':'bold',
         fill:textFill}, d.id);
@@ -774,9 +791,11 @@ class GanttChart {
       const hdr = document.createElement('div');
       hdr.className = 'label-wp-header';
       hdr.style.cssText = 'background:' + getWPColor(g.wp) + '12';
+      const wpResp = this.store.getWPResponsible()[g.wp];
+      const respStr = wpResp ? ' <span style="color:#5d6d7e;font-weight:400">(' + esc(wpResp) + ')</span>' : '';
       hdr.innerHTML = '<span style="color:' + getWPColor(g.wp) + ';font-size:13px;width:16px;display:inline-block;text-align:center">' + (g.collapsed ? '\u25B6' : '\u25BC') + '</span>' +
         '<span class="wp-badge" style="background:' + getWPColor(g.wp) + '">' + g.wp + '</span>' +
-        '<span style="color:#4f4f4f;font-size:13px;font-weight:600">' + (this.store.getWPNames()[g.wp] || g.wp) + ' <span style="color:#878787;font-weight:400">(' + g.tasks.length + ' tasks)</span></span>';
+        '<span style="color:#4f4f4f;font-size:13px;font-weight:600">' + (this.store.getWPNames()[g.wp] || g.wp) + respStr + ' <span style="color:#878787;font-weight:400">(' + g.tasks.length + ' tasks)</span></span>';
       hdr.addEventListener('click', () => this._toggleCollapsed(g.wp));
       this.labelList.appendChild(hdr);
 
@@ -808,7 +827,7 @@ class GanttChart {
   _drawStats(allTasks) {
     const total = allTasks.length;
     const dels = allTasks.reduce((s,t)=>s+(t.deliverables||[]).length,0);
-    document.getElementById('stats').innerHTML = `<span>${total} tasks</span><span>${dels} deliverables</span><span>${this.store.getPartners().length} partners</span><span>M1\u2013M${this.store.getMonths()}</span>`;
+    document.getElementById('stats').innerHTML = `<span>${total} tasks</span><span>${dels} deliverables</span><span>${this.store.getPartners().length} responsible</span><span>M1\u2013M${this.store.getMonths()}</span>`;
   }
 
   _onTooltip(el, html) {
@@ -850,15 +869,20 @@ class DataEditor {
     const tb = document.getElementById('wpBody');
     tb.innerHTML = '';
     const wpNames = this.store.getWPNames();
+    const wpResp = this.store.getWPResponsible();
     const wps = [...new Set([...DEFAULT_WPS, ...Object.keys(this.store.getWPP()), ...this.store.getTasks().map(t=>t.wp)])];
     wps.forEach(wp => {
       const tr = document.createElement('tr');
       tr.innerHTML = `<td><span class="wp-badge" style="background:${getWPColor(wp)};font-size:12px;padding:2px 8px">${esc(wp)}</span></td>
-        <td><input type="text" value="${esc(wpNames[wp]||'')}" data-role="wpn" data-wp="${esc(wp)}" placeholder="WP name"></td>`;
+        <td><input type="text" value="${esc(wpNames[wp]||'')}" data-role="wpn" data-wp="${esc(wp)}" placeholder="WP name"></td>
+        <td><input type="text" value="${esc(wpResp[wp]||'')}" data-role="wpr" data-wp="${esc(wp)}" placeholder="Responsible"></td>`;
       tb.appendChild(tr);
     });
     tb.querySelectorAll('[data-role="wpn"]').forEach(el => el.addEventListener('change', e => {
       this.store.updateWPName(e.target.dataset.wp, e.target.value);
+    }));
+    tb.querySelectorAll('[data-role="wpr"]').forEach(el => el.addEventListener('change', e => {
+      this.store.updateWPResponsible(e.target.dataset.wp, e.target.value);
     }));
   }
 
@@ -867,14 +891,17 @@ class DataEditor {
     tb.innerHTML = '';
     const months = this.store.getMonths();
     const tasks = this.store.getTasks();
+    const startDate = this.store.getStartDate();
     tasks.forEach((t,i) => {
       const tr = document.createElement('tr');
       const wps = [...new Set([...DEFAULT_WPS, ...Object.keys(this.store.getWPP()), t.wp])];
+      const startDateStr = formatMonthDate(startDate, t.start);
+      const endDateStr = formatMonthDate(startDate, t.end);
       tr.innerHTML = `<td><input type="text" value="${esc(t.id)}" data-role="t" data-idx="${i}" data-f="id"></td>
         <td><select data-role="t" data-idx="${i}" data-f="wp">${wps.map(w=>`<option value="${w}" ${w===t.wp?'selected':''}>${w}</option>`).join('')}</select></td>
         <td><input type="text" value="${esc(t.label)}" data-role="t" data-idx="${i}" data-f="label"></td>
-        <td><input type="number" min="1" max="${months}" value="${t.start}" data-role="t" data-idx="${i}" data-f="start" style="width:40px"></td>
-        <td><input type="number" min="1" max="${months}" value="${t.end}" data-role="t" data-idx="${i}" data-f="end" style="width:40px"></td>
+        <td><input type="number" min="1" max="${months}" value="${t.start}" data-role="t" data-idx="${i}" data-f="start" style="width:40px"><span style="font-size:11px;color:#666;margin-left:4px">${startDateStr}</span></td>
+        <td><input type="number" min="1" max="${months}" value="${t.end}" data-role="t" data-idx="${i}" data-f="end" style="width:40px"><span style="font-size:11px;color:#666;margin-left:4px">${endDateStr}</span></td>
         <td><input type="text" value="${esc((t.partners||[]).join(', '))}" data-role="t" data-idx="${i}" data-f="partners" placeholder="comma separated"></td>
         <td class="del-row"><button class="btn btn-sm btn-danger" data-cmd="del-task" data-idx="${i}">✕</button></td>`;
       tb.appendChild(tr);
@@ -897,12 +924,14 @@ class DataEditor {
     const months = this.store.getMonths();
     const tasks = this.store.getTasks();
     const dels = this.store.getAllDeliverables();
+    const startDate = this.store.getStartDate();
     dels.forEach((d,i) => {
       const tr = document.createElement('tr');
+      const monthDateStr = formatMonthDate(startDate, d.m);
       tr.innerHTML = `<td><select data-role="d" data-idx="${i}" data-f="taskId" style="max-width:70px">${tasks.map(t=>`<option value="${esc(t.id)}" ${t.id===d.taskId?'selected':''}>${esc(t.id)}</option>`).join('')}</select></td>
         <td><input type="text" value="${esc(d.id)}" data-role="d" data-idx="${i}" data-f="id"></td>
-        <td><input type="number" min="1" max="${months}" value="${d.m}" data-role="d" data-idx="${i}" data-f="m" style="width:40px"></td>
-        <td><input type="text" value="${esc(d.leader)}" data-role="d" data-idx="${i}" data-f="leader"></td>
+        <td><input type="number" min="1" max="${months}" value="${d.m}" data-role="d" data-idx="${i}" data-f="m" style="width:40px"><span style="font-size:11px;color:#666;margin-left:4px">${monthDateStr}</span></td>
+        <td><input type="text" value="${esc(d.responsible)}" data-role="d" data-idx="${i}" data-f="responsible"></td>
         <td><input type="text" value="${esc(d.label)}" data-role="d" data-idx="${i}" data-f="label"></td>
         <td class="del-row"><button class="btn btn-sm btn-danger" data-cmd="del-del" data-idx="${i}">✕</button></td>`;
       tb.appendChild(tr);
@@ -1088,7 +1117,7 @@ class App {
     wpSel.innerHTML = '<option value="all">All WPs</option>';
     wps.forEach(wp => { const o=document.createElement('option'); o.value=wp; o.textContent=wp+' — '+(this.store.getWPNames()[wp]||wp); if(wp===curWp) o.selected=true; wpSel.appendChild(o); });
     const partners = this.store.getPartners();
-    pSel.innerHTML = '<option value="all">All Partners</option>';
+    pSel.innerHTML = '<option value="all">All Responsibles</option>';
     partners.forEach(p => { const o=document.createElement('option'); o.value=p; o.textContent=p; if(p===curPt) o.selected=true; pSel.appendChild(o); });
   }
 
@@ -1122,6 +1151,7 @@ class App {
         if (!cur || !confirm('Replace all tasks with demo data?')) return;
         cur.tasks = buildDemoTasks();
         cur.wpNames = clone(WP_NAMES);
+        cur.wpResponsible = {};
         cur.wpParticipants = clone(DEMO_WPP);
         cur.startDate = '2024-05-01';
         cur.komDate = '2024-07-01';
@@ -1153,14 +1183,14 @@ class App {
         const t = tasks.find(tt=>tt.id===tid); if (!t) { alert('Task not found'); return; }
         const did = prompt('Deliverable ID:'); if (!did) return;
         const m = parseInt(prompt('Month (1-'+this.store.getMonths()+'):'),10)||1;
-        const l = prompt('Leader:'); if (!l) return;
+        const l = prompt('Responsible:'); if (!l) return;
         const lb = prompt('Deliverable label:'); if (!lb) return;
-        this.store.addDeliverable(tid, {id:did, m, leader:l, label:lb});
+        this.store.addDeliverable(tid, {id:did, m, responsible:l, label:lb});
         Toast.show('Deliverable '+did+' added');
       } else if (cmd === 'export-json') {
         const cur = this.store.current();
         if (!cur) return;
-        const data = {projectName:cur.name, startDate:cur.startDate, komDate:cur.komDate, months:cur.months, wpNames:cur.wpNames, wpParticipants:cur.wpParticipants, tasks:cur.tasks.map(t=>{const c=clone(t); c.partners=t.partners; return c;})};
+        const data = {projectName:cur.name, startDate:cur.startDate, komDate:cur.komDate, months:cur.months, wpNames:cur.wpNames, wpResponsible:cur.wpResponsible, wpParticipants:cur.wpParticipants, tasks:cur.tasks.map(t=>{const c=clone(t); c.partners=t.partners; return c;})};
         const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
         const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=(cur.name.replace(/\s+/g,'_')||'project')+'.json'; a.click(); URL.revokeObjectURL(a.href);
         Toast.show('JSON exported');
@@ -1193,7 +1223,7 @@ class App {
         try {
           const data = JSON.parse(ev.target.result);
           if (!data.tasks || !Array.isArray(data.tasks)) throw new Error('Invalid format');
-          const p = this.store.addProject(data.projectName||'Imported', data.tasks, data.wpParticipants||{}, data.startDate||'2024-01-01', data.komDate||null, data.months||36, data.wpNames);
+          const p = this.store.addProject(data.projectName||'Imported', data.tasks, data.wpParticipants||{}, data.startDate||'2024-01-01', data.komDate||null, data.months||36, data.wpNames, data.wpResponsible);
           p.tasks.forEach(t => { if(!t.deliverables) t.deliverables=[]; if(!t.partners) t.partners=[...(p.wpParticipants[t.wp]||[])]; });
           this.store.save();
           this.store._emit();
