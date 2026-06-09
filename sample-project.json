@@ -1,0 +1,137 @@
+{
+  "projectName": "Sample Project",
+  "startDate": "2025-01-01",
+  "komDate": "2025-02-15",
+  "months": 24,
+  "wpNames": {
+    "WP1": "Research & Analysis",
+    "WP2": "Design & Prototyping",
+    "WP3": "Implementation",
+    "WP4": "Testing & QA",
+    "WP5": "Deployment & Maintenance"
+  },
+  "wpParticipants": {
+    "WP1": ["Acme Corp", "Globex Inc", "Initech"],
+    "WP2": ["Acme Corp", "Umbrella Ltd", "Globex Inc"],
+    "WP3": ["Acme Corp", "Initech", "Umbrella Ltd"],
+    "WP4": ["Globex Inc", "Initech", "Umbrella Ltd"],
+    "WP5": ["Acme Corp", "Globex Inc", "Initech", "Umbrella Ltd"]
+  },
+  "tasks": [
+    {
+      "id": "T1.1",
+      "wp": "WP1",
+      "label": "Literature review & state of the art",
+      "start": 1,
+      "end": 4,
+      "partners": ["Acme Corp", "Globex Inc", "Initech"],
+      "deliverables": [
+        { "id": "D1.1", "m": 4, "leader": "Acme Corp", "label": "State of the art report" }
+      ]
+    },
+    {
+      "id": "T1.2",
+      "wp": "WP1",
+      "label": "Requirements elicitation",
+      "start": 2,
+      "end": 6,
+      "partners": ["Acme Corp", "Globex Inc", "Initech"],
+      "deliverables": [
+        { "id": "D1.2", "m": 6, "leader": "Globex Inc", "label": "Requirements specification" }
+      ]
+    },
+    {
+      "id": "T2.1",
+      "wp": "WP2",
+      "label": "System architecture design",
+      "start": 4,
+      "end": 10,
+      "partners": ["Acme Corp", "Umbrella Ltd", "Globex Inc"],
+      "deliverables": [
+        { "id": "D2.1", "m": 8, "leader": "Acme Corp", "label": "Architecture document v1" },
+        { "id": "D2.2", "m": 10, "leader": "Acme Corp", "label": "Architecture document final" }
+      ]
+    },
+    {
+      "id": "T2.2",
+      "wp": "WP2",
+      "label": "UI/UX prototyping",
+      "start": 5,
+      "end": 12,
+      "partners": ["Umbrella Ltd", "Globex Inc"],
+      "deliverables": [
+        { "id": "D2.3", "m": 9, "leader": "Umbrella Ltd", "label": "Wireframes & mockups" },
+        { "id": "D2.4", "m": 12, "leader": "Umbrella Ltd", "label": "Interactive prototype" }
+      ]
+    },
+    {
+      "id": "T3.1",
+      "wp": "WP3",
+      "label": "Backend services development",
+      "start": 8,
+      "end": 18,
+      "partners": ["Acme Corp", "Initech", "Umbrella Ltd"],
+      "deliverables": [
+        { "id": "D3.1", "m": 12, "leader": "Initech", "label": "API specification" },
+        { "id": "D3.2", "m": 18, "leader": "Initech", "label": "Backend release v1.0" }
+      ]
+    },
+    {
+      "id": "T3.2",
+      "wp": "WP3",
+      "label": "Frontend application development",
+      "start": 10,
+      "end": 20,
+      "partners": ["Acme Corp", "Umbrella Ltd"],
+      "deliverables": [
+        { "id": "D3.3", "m": 16, "leader": "Umbrella Ltd", "label": "Frontend alpha release" },
+        { "id": "D3.4", "m": 20, "leader": "Umbrella Ltd", "label": "Frontend v1.0" }
+      ]
+    },
+    {
+      "id": "T4.1",
+      "wp": "WP4",
+      "label": "Unit & integration testing",
+      "start": 12,
+      "end": 20,
+      "partners": ["Globex Inc", "Initech", "Umbrella Ltd"],
+      "deliverables": [
+        { "id": "D4.1", "m": 16, "leader": "Globex Inc", "label": "Test plan & coverage report" },
+        { "id": "D4.2", "m": 20, "leader": "Globex Inc", "label": "Integration test results" }
+      ]
+    },
+    {
+      "id": "T4.2",
+      "wp": "WP4",
+      "label": "User acceptance testing",
+      "start": 18,
+      "end": 22,
+      "partners": ["Acme Corp", "Globex Inc", "Initech"],
+      "deliverables": [
+        { "id": "D4.3", "m": 22, "leader": "Acme Corp", "label": "UAT sign-off report" }
+      ]
+    },
+    {
+      "id": "T5.1",
+      "wp": "WP5",
+      "label": "Production deployment",
+      "start": 20,
+      "end": 23,
+      "partners": ["Acme Corp", "Globex Inc", "Initech", "Umbrella Ltd"],
+      "deliverables": [
+        { "id": "D5.1", "m": 23, "leader": "Acme Corp", "label": "Deployment runbook" }
+      ]
+    },
+    {
+      "id": "T5.2",
+      "wp": "WP5",
+      "label": "Maintenance & support",
+      "start": 22,
+      "end": 24,
+      "partners": ["Acme Corp", "Globex Inc", "Initech", "Umbrella Ltd"],
+      "deliverables": [
+        { "id": "D5.2", "m": 24, "leader": "Initech", "label": "Maintenance handover document" }
+      ]
+    }
+  ]
+}

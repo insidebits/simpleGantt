@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Simple Gantt Editor</title>
+<style>
+:root {
+  --font-body: "Roboto", Arial, sans-serif;
+  --font-heading: "Roboto Condensed", Arial, sans-serif;
+  --accent-1: #0b72b5;
+  --accent-2: #39a9dc;
+  --accent-3: #98ddfd;
+  --text-dark-1: #121212;
+  --text-dark-2: #4f4f4f;
+  --text-dark-3: #878787;
+  --text-light-1: #fafafa;
+  --text-light-2: #d2e2eb;
+  --text-light-3: #abc8d9;
+  --text-blue-1: #063f65;
+  --text-blue-2: #376e92;
+  --dark-bg-1: #00111d;
+  --dark-bg-2: #001626;
+  --dark-bg-3: #011b2d;
+  --light-bg-1: #f7fcff;
+  --light-bg-2: #effaff;
+  --light-bg-3: #e8f7ff;
+  --light-bg-8: #c6eaff;
+  --neutral-1: #fdfdfd;
+  --neutral-2: #f8f8f8;
+  --neutral-3: #f3f3f3;
+  --neutral-4: #eee;
+  --neutral-5: #e9e9e9;
+  --neutral-6: #e4e4e4;
+  --gradient-primary: linear-gradient(90deg, #0b72b5, #39a9dc);
+  --gradient-accent: linear-gradient(90deg, #39a9dc, #3dc9e2);
+  --red: #ea384c;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font-body);background:#f0f2f4;color:var(--text-dark-1);padding:16px;-webkit-font-smoothing:antialiased;font-size:15px}
+h1{font-family:var(--font-heading);font-size:1.5rem;font-weight:700;color:#1a3a5c;margin-bottom:4px}
+.sub{color:var(--text-dark-3);font-size:.9rem;margin-bottom:10px}
+/* Project bar */
+#projectBar{display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+#projectBar select{padding:5px 10px;border:1px solid #d5dbdb;border-radius:6px;font-family:var(--font-body);font-size:.92rem;font-weight:600;background:#fff;cursor:pointer;min-width:200px}
+#projectBar select:focus{outline:2px solid #2d7ab0}
+.pbtn{padding:5px 12px;border:1px solid #d5dbdb;border-radius:5px;font-family:var(--font-body);font-size:.85rem;background:#fff;cursor:pointer;color:var(--text-dark-2);white-space:nowrap}
+.pbtn:hover{background:#f4f6f7;color:var(--text-dark-1)}
+.pbtn-primary{color:#fff;border-color:#2d7ab0;background:linear-gradient(90deg, #1a3a5c, #2d7ab0)}
+.pbtn-primary:hover{background:#1f4d78;background-image:none;color:#fff}
+.pbtn-danger{background:var(--red);color:#fff;border-color:var(--red)}
+.pbtn-danger:hover{background:#c72539;color:#fff}
+/* Controls */
+.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.controls label{font-size:.87rem;font-weight:600;color:var(--text-dark-2)}
+.controls select{padding:4px 8px;border:1px solid #d5dbdb;border-radius:5px;font-family:var(--font-body);font-size:.87rem;background:#fff;cursor:pointer}
+.controls select:focus{outline:2px solid #2d7ab0}
+.btn{padding:5px 12px;border:1px solid #d5dbdb;border-radius:5px;font-family:var(--font-body);font-size:.85rem;background:#fff;cursor:pointer;color:var(--text-dark-2)}
+.btn:hover{background:#f4f6f7;color:var(--text-dark-1)}
+.btn-primary{color:#fff;border-color:#2d7ab0;background:linear-gradient(90deg, #1a3a5c, #2d7ab0)}
+.btn-primary:hover{background:#1f4d78;background-image:none;color:#fff}
+.btn-sm{padding:3px 8px;font-size:.8rem}
+.btn-danger{background:var(--red);color:#fff;border-color:var(--red)}
+.btn-danger:hover{background:#c72539;color:#fff}
+/* Gantt */
+#gantt-wrapper{display:flex;background:#fff;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.07);overflow:hidden;position:relative;border:1px solid #d5dbdb}
+#label-panel{overflow:hidden;flex-shrink:0;position:relative}
+#label-header{height:64px;background:#f4f6f7;border-bottom:1px solid #d5dbdb;display:flex;align-items:center;padding:0 10px;font-family:var(--font-heading);font-size:.9rem;font-weight:600;color:var(--text-dark-2);border-right:1px solid #d5dbdb}
+#label-list{overflow:hidden}
+.label-row{height:32px;display:flex;align-items:center;padding:0 8px 0 4px;font-size:13px;font-weight:500;color:var(--text-dark-1);border-bottom:1px solid #eef0f1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-right:1px solid #d5dbdb;gap:4px}
+.label-wp-header{height:32px;display:flex;align-items:center;padding:0 8px 0 4px;font-size:13px;font-weight:700;color:var(--text-dark-1);border-bottom:1px solid #d5dbdb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-right:1px solid #d5dbdb;gap:4px;cursor:pointer}
+#resize-handle{width:5px;cursor:col-resize;background:#d5dbdb;flex-shrink:0;position:relative;transition:background .15s}
+#resize-handle:hover,#resize-handle.active{background:#2d7ab0}
+#chart-panel{overflow-x:auto;flex:1;min-width:0;position:relative}
+#chart-panel svg{display:block;max-width:none}
+.tooltip{position:absolute;background:#fff;color:var(--text-dark-1);padding:10px 14px;border-radius:8px;font-size:.82rem;line-height:1.5;pointer-events:none;opacity:0;transition:opacity .12s;max-width:380px;z-index:100;box-shadow:0 4px 16px rgba(0,0,0,.15);border:1px solid #d5dbdb}
+.tooltip.show{opacity:1}
+.tooltip .tt-title{color:#2c3e50;font-weight:600;font-size:.85rem}
+.tooltip .tt-wp{color:#566573}
+.tooltip .tt-part{color:#1a5276}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:8px;padding-top:8px;border-top:1px solid #d5dbdb;font-family:var(--font-body);font-size:.85rem;color:var(--text-dark-2)}
+.legend-item{display:flex;align-items:center;gap:4px}
+.legend-dot{width:16px;height:8px;border-radius:3px;flex-shrink:0}
+.legend-ms{width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:11px solid #000;filter:drop-shadow(0 0 2px #fff);flex-shrink:0}
+#stats{display:flex;gap:14px;margin-top:6px;font-size:.85rem;color:var(--text-dark-3);flex-wrap:wrap}
+.bar{cursor:pointer;transition:opacity .1s}
+.bar:hover{opacity:.8!important}
+.milestone{cursor:pointer;transition:opacity .1s}
+.milestone:hover{opacity:.7}
+.wp-badge{display:inline-block;padding:0 6px;border-radius:4px;font-size:11px;font-weight:700;color:#fff;line-height:1.6;flex-shrink:0}
+.today-line{pointer-events:none}
+.today-label{font-size:10px;fill:#ea384c;font-weight:600}
+/* Editor */
+#data-panel{background:#fff;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.07);margin-top:16px;padding:12px;border:1px solid #d5dbdb}
+#data-panel h2{font-family:var(--font-heading);font-size:1.15rem;color:#1a3a5c;margin-bottom:8px}
+.editor-controls{margin-bottom:10px;display:flex;gap:6px;flex-wrap:wrap}
+table.data{width:100%;border-collapse:collapse;font-size:.85rem;margin-bottom:16px;table-layout:fixed}
+table.data th{background:#f4f6f7;border:1px solid #d5dbdb;padding:5px 6px;font-weight:600;color:var(--text-dark-2);text-align:left;font-size:.8rem;white-space:nowrap;position:relative;overflow:hidden;text-overflow:ellipsis}
+table.data td{border:1px solid #d5dbdb;padding:2px 4px;vertical-align:middle;overflow:hidden;text-overflow:ellipsis}
+table.data input,table.data select{width:100%;border:none;padding:3px 4px;font-family:var(--font-body);font-size:.82rem;background:transparent;outline:none}
+table.data input:focus,table.data select:focus{background:#f4f6f7;outline:1px solid #2d7ab0;border-radius:2px}
+table.data .del-row{width:28px;text-align:center}
+.col-resizer{position:absolute;top:0;right:-3px;width:7px;height:100%;cursor:col-resize;z-index:2}
+.col-resizer:hover,.col-resizer.resizing{background:#2d7ab0}
+.editor-section{margin-bottom:16px}
+.editor-section h3{font-family:var(--font-heading);font-size:.9rem;color:var(--text-dark-2);margin-bottom:6px}
+.toast{position:fixed;bottom:24px;right:24px;background:#1a2b3c;color:#eef0f1;padding:12px 18px;border-radius:8px;font-size:.88rem;z-index:200;opacity:0;transition:opacity .3s}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<h1>Simple Gantt</h1>
+<p class="sub">Manage multiple projects &mdash; add, edit, filter tasks and deliverables.</p>
+
+<div id="projectBar">
+  <select id="projectSelect"></select>
+  <button class="pbtn pbtn-primary" data-cmd="project-new">New</button>
+  <button class="pbtn" data-cmd="project-rename">Rename</button>
+  <button class="pbtn pbtn-danger" data-cmd="project-delete">Delete</button>
+  <button class="pbtn" data-cmd="project-clone">Clone</button>
+  <span style="flex:1"></span>
+  <span id="projInfo" style="font-size:.85rem;color:var(--text-dark-3)"></span>
+</div>
+
+<div class="controls">
+  <label for="wpFilter">WP:</label>
+  <select id="wpFilter"><option value="all">All WPs</option></select>
+  <label for="partnerFilter">Partner:</label>
+  <select id="partnerFilter"><option value="all">All Partners</option></select>
+  <span style="color:var(--text-dark-3);font-size:.85rem" id="taskCount"></span>
+  <span style="margin-left:auto"></span>
+  <span id="todayInfo" style="font-size:.85rem;color:#2c3e50"></span>
+</div>
+
+<div id="gantt-wrapper">
+  <div id="label-panel">
+    <div id="label-header">Task</div>
+    <div id="label-list"></div>
+  </div>
+  <div id="resize-handle"></div>
+  <div id="chart-panel">
+    <div class="tooltip" id="tooltip"></div>
+    <svg id="gantt"></svg>
+  </div>
+</div>
+
+<div class="legend" id="legend"></div>
+<div id="stats"></div>
+
+<div id="data-panel">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <h2>Data Editor</h2>
+    <span style="font-size:.8rem;color:var(--text-dark-3)">Edits update the Gantt instantly</span>
+  </div>
+  <div class="editor-controls">
+    <button class="btn btn-primary btn-sm" data-cmd="task-add">Add Task</button>
+    <button class="btn btn-sm" data-cmd="del-add">Add Deliverable</button>
+    <button class="btn btn-sm" data-cmd="export-json">Export JSON</button>
+    <button class="btn btn-sm" data-cmd="import-json">Import JSON</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" />
+    <button class="btn btn-sm btn-danger" data-cmd="tasks-clear">Clear Tasks</button>
+    <button class="btn btn-sm" data-cmd="demo-reset">Reset Demo</button>
+    <button class="btn btn-sm" data-cmd="save-html">Save HTML</button>
+    <span style="font-size:.8rem;color:var(--text-dark-3);margin-left:8px" id="saveStatus"></span>
+  </div>
+  <div class="editor-section" style="display:flex;gap:18px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+    <label style="font-size:.9rem;font-weight:600;color:var(--text-dark-2)">Start Date:
+      <input type="date" id="projStartDate" style="font-size:.88rem;padding:3px 6px;border:1px solid #d5dbdb;border-radius:4px;margin-left:4px">
+    </label>
+    <label style="font-size:.9rem;font-weight:600;color:var(--text-dark-2)">Kick-off Date:
+      <input type="date" id="projKOMDate" style="font-size:.88rem;padding:3px 6px;border:1px solid #d5dbdb;border-radius:4px;margin-left:4px">
+    </label>
+    <span style="font-size:.8rem;color:var(--text-dark-3);margin-left:4px">Empty KOM = no marker</span>
+  </div>
+  <div class="editor-section">
+    <h3>Work Packages</h3>
+    <table class="data" id="wpTable" style="max-width:400px">
+      <thead><tr>
+        <th style="width:60px">WP</th>
+        <th>Name</th>
+      </tr></thead>
+      <tbody id="wpBody"></tbody>
+    </table>
+  </div>
+  <div class="editor-section">
+    <h3>Tasks</h3>
+    <table class="data" id="taskTable">
+      <thead><tr>
+        <th style="width:60px">ID</th>
+        <th style="width:50px">WP</th>
+        <th>Label</th>
+        <th style="width:40px">Start M</th>
+        <th style="width:40px">End M</th>
+        <th>Partners</th>
+        <th style="width:28px"></th>
+      </tr></thead>
+      <tbody id="taskBody"></tbody>
+    </table>
+  </div>
+  <div class="editor-section">
+    <h3>Deliverables</h3>
+    <table class="data" id="delTable">
+      <thead><tr>
+        <th style="width:60px">Task ID</th>
+        <th style="width:60px">Del ID</th>
+        <th style="width:40px">Month</th>
+        <th style="width:80px">Leader</th>
+        <th>Label</th>
+        <th style="width:28px"></th>
+      </tr></thead>
+      <tbody id="delBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Embedded data fallback (populated by Save HTML) -->
+<script id="initData" type="application/json">null</script>
+
+<script>
+// ============================================================
+// CONFIGURATION
+// ============================================================
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const WP_COLORS = {WP1:'#1a3a5c',WP2:'#1f4d78',WP3:'#256394',WP4:'#2d7ab0',WP5:'#3d8fbf',WP6:'#5ca3cc',WP7:'#7fb8d9',WP8:'#a0cce5'};
+const WP_NAMES = {WP1:'Requirements',WP2:'System Design',WP3:'Components',WP4:'Embedded SW',WP5:'Integration',WP6:'Test & Demo',WP7:'Exploitation',WP8:'Management'};
+const DEFAULT_WPS = Object.keys(WP_COLORS);
+const WP_PALETTE = ['#3d6b8a','#4a7b99','#588ba8','#669bb7','#74abc6','#82bbd5','#90cbe4','#b0d8ec','#c0e2f0','#d0ecf4','#3a5a73','#4a6a83','#5a7a93','#6a8aa3','#7a9ab3','#8aaac3'];
+function getWPColor(wp) {
+  if (WP_COLORS[wp]) return WP_COLORS[wp];
+  let h = 0;
+  for (let i = 0; i < wp.length; i++) h = ((h << 5) - h) + wp.charCodeAt(i);
+  return WP_PALETTE[Math.abs(h) % WP_PALETTE.length];
+}
+const ROW_H = 32, HEADER_H = 64;
+const LS_KEY = 'ganttMultiProjects';
+
+// ============================================================
+// DEMO DATA
+// ============================================================
+const DEMO_WPP = {
+  WP1:['Acme Corp','Globex Inc','Initech'],
+  WP2:['Acme Corp','Umbrella Ltd','Globex Inc'],
+  WP3:['Acme Corp','Initech','Umbrella Ltd'],
+  WP4:['Acme Corp','Globex Inc','Initech','Umbrella Ltd'],
+  WP5:['Globex Inc','Initech','Umbrella Ltd'],
+  WP6:['Acme Corp','Globex Inc','Initech','Umbrella Ltd'],
+  WP7:['Acme Corp','Globex Inc','Initech','Umbrella Ltd'],
+  WP8:['Acme Corp','Initech']
+};
+
+function buildDemoTasks() {
+  const raw = [
+    {id:'T1.1',wp:'WP1',label:'Requirements gathering',s:1,e:4,del:[{id:'D1.1',m:4,l:'Acme Corp',lb:'Requirements document'}]},
+    {id:'T1.2',wp:'WP1',label:'Feasibility study',s:2,e:5,del:[{id:'D1.2',m:5,l:'Globex Inc',lb:'Feasibility report'}]},
+    {id:'T2.1',wp:'WP2',label:'System architecture',s:4,e:10,del:[
+      {id:'D2.1',m:8,l:'Acme Corp',lb:'Architecture v1'},{id:'D2.2',m:10,l:'Acme Corp',lb:'Architecture final'}]},
+    {id:'T2.2',wp:'WP2',label:'UI/UX design',s:5,e:12,del:[{id:'D2.3',m:9,l:'Umbrella Ltd',lb:'Design mockups'},{id:'D2.4',m:12,l:'Umbrella Ltd',lb:'Design final'}]},
+    {id:'T3.1',wp:'WP3',label:'Backend development',s:8,e:18,del:[{id:'D3.1',m:12,l:'Initech',lb:'API spec'},{id:'D3.2',m:18,l:'Initech',lb:'Backend v1.0'}]},
+    {id:'T3.2',wp:'WP3',label:'Frontend development',s:10,e:20,del:[{id:'D3.3',m:16,l:'Umbrella Ltd',lb:'Frontend alpha'},{id:'D3.4',m:20,l:'Umbrella Ltd',lb:'Frontend v1.0'}]},
+    {id:'T4.1',wp:'WP4',label:'Integration testing',s:12,e:20,del:[{id:'D4.1',m:16,l:'Globex Inc',lb:'Test plan'},{id:'D4.2',m:20,l:'Globex Inc',lb:'Test results'}]},
+    {id:'T4.2',wp:'WP4',label:'User acceptance testing',s:18,e:22,del:[{id:'D4.3',m:22,l:'Acme Corp',lb:'UAT report'}]},
+    {id:'T5.1',wp:'WP5',label:'Deployment',s:20,e:23,del:[{id:'D5.1',m:23,l:'Acme Corp',lb:'Deployment guide'}]},
+    {id:'T5.2',wp:'WP5',label:'Training & handover',s:22,e:24,del:[]},
+    {id:'T6.1',wp:'WP6',label:'Documentation',s:1,e:24,del:[{id:'D6.1',m:12,l:'Initech',lb:'User manual v1'},{id:'D6.2',m:24,l:'Initech',lb:'User manual final'}]},
+    {id:'T6.2',wp:'WP6',label:'Quality assurance',s:1,e:24,del:[{id:'D6.3',m:24,l:'Globex Inc',lb:'QA report'}]},
+    {id:'T7.1',wp:'WP7',label:'Project management',s:1,e:24,del:[{id:'D7.1',m:6,l:'Acme Corp',lb:'Status report Q1'},{id:'D7.2',m:12,l:'Acme Corp',lb:'Status report Q2'},{id:'D7.3',m:18,l:'Acme Corp',lb:'Status report Q3'},{id:'D7.4',m:24,l:'Acme Corp',lb:'Final report'}]},
+    {id:'T7.2',wp:'WP7',label:'Risk management',s:1,e:24,del:[]},
+    {id:'T7.3',wp:'WP7',label:'Stakeholder communication',s:1,e:24,del:[{id:'D7.5',m:12,l:'Initech',lb:'Mid-term review'},{id:'D7.6',m:24,l:'Initech',lb:'Final review'}]},
+    {id:'T8.1',wp:'WP8',label:'Coordination',s:1,e:24,del:[{id:'D8.1',m:3,l:'Acme Corp',lb:'Kick-off minutes'}]},
+    {id:'T8.2',wp:'WP8',label:'Financial management',s:1,e:24,del:[]}
+  ];
+  return raw.map(r => ({
+    id:r.id, wp:r.wp, label:r.label, start:r.s, end:r.e,
+    partners: [...(DEMO_WPP[r.wp]||[])],
+    deliverables: r.del.map(d => ({id:d.id, m:d.m, leader:d.l, label:d.lb}))
+  }));
+}
+
+// ============================================================
+// UTILITY
+// ============================================================
+const clone = o => JSON.parse(JSON.stringify(o));
+const esc = s => String(s).replace(/[&"'<>]/g, c => ({'&':'&amp;','"':'&quot;',"'":'&#39;','<':'&lt;','>':'&gt;'})[c]);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+
+function getCalMonthRef(startDate, pm) {
+  const d = new Date(startDate);
+  d.setMonth(d.getMonth() + pm - 1);
+  return { name: MONTH_NAMES[d.getMonth()], year: d.getFullYear() };
+}
+
+function getMonthFrac(startDate) {
+  const ms = 30.436875 * 86400000;
+  return (new Date() - new Date(startDate)) / ms;
+}
+
+function calcTodayInfo(startDate, months) {
+  const m0 = Math.max(0, Math.min(months, getMonthFrac(startDate)));
+  const pm = Math.floor(m0) + 1;
+  const cal = getCalMonthRef(startDate, pm);
+  const ds = new Date().toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
+  return { month:m0, projectMonth:pm, label:`${ds} — M${pm} (${cal.name} ${cal.year})` };
+}
+
+// ============================================================
+// STORE — immutable-like state management
+// ============================================================
+class Store {
+  constructor() {
+    this.listeners = [];
+    this.projects = [];
+    this.currentId = null;
+  }
+
+  subscribe(fn) { this.listeners.push(fn); return () => this.listeners = this.listeners.filter(l=>l!==fn); }
+  _emit() { this.listeners.forEach(fn => fn()); }
+
+  load() {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (raw) { const data = JSON.parse(raw); this.projects = data; if (data.length) this.currentId = data[0].id; return; }
+    } catch(e) {}
+    // Fallback: embedded data from Save HTML snapshot
+    try {
+      const embedEl = document.getElementById('initData');
+      if (embedEl) {
+        const embedRaw = embedEl.textContent;
+        if (embedRaw && embedRaw !== 'null') {
+          const data = JSON.parse(embedRaw);
+          if (Array.isArray(data) && data.length) { this.projects = data; this.currentId = data[0].id; this.save(); return; }
+        }
+      }
+    } catch(e) {}
+    this._initDemo();
+  }
+
+  _initDemo() {
+    this.projects = [{
+      id: uid(), name: 'Sample Project', startDate:'2025-01-01', komDate:'2025-02-15', months:24,
+      wpNames: clone(WP_NAMES),
+      wpParticipants: clone(DEMO_WPP),
+      wpCollapsed: {},
+      tasks: buildDemoTasks()
+    }];
+    this.currentId = this.projects[0].id;
+    this.save();
+  }
+
+  save() {
+    localStorage.setItem(LS_KEY, JSON.stringify(this.projects));
+  }
+
+  current() { return this.projects.find(p => p.id === this.currentId) || null; }
+  setCurrent(id) { this.currentId = id; this._emit(); }
+
+  // Project CRUD
+  addProject(name, tasks, wpp, startDate, komDate, months, wpNames) {
+    const p = { id:uid(), name:name||'Untitled', tasks:tasks||[], wpNames:wpNames||clone(WP_NAMES), wpParticipants:wpp||{}, wpCollapsed:{}, startDate:startDate||'2024-01-01', komDate:komDate||null, months:months||24 };
+    this.projects.push(p);
+    this.currentId = p.id;
+    this.save(); this._emit();
+    return p;
+  }
+
+  removeProject(id) {
+    if (this.projects.length <= 1) return false;
+    this.projects = this.projects.filter(p => p.id !== id);
+    if (this.currentId === id) this.currentId = this.projects[0].id;
+    this.save(); this._emit();
+    return true;
+  }
+
+  renameProject(id, name) {
+    const p = this.projects.find(pr => pr.id === id);
+    if (!p) return;
+    p.name = name;
+    this.save(); this._emit();
+  }
+
+  cloneProject(id, newName) {
+    const src = this.projects.find(p => p.id === id);
+    if (!src) return null;
+    const cloned = { ...clone(src), id:uid(), name:newName||(src.name+' (copy)'), wpCollapsed:{} };
+    this.projects.push(cloned);
+    this.currentId = cloned.id;
+    this.save(); this._emit();
+    return cloned;
+  }
+
+  // Task CRUD
+  addTask(task) {
+    const cur = this.current();
+    if (!cur) return;
+    cur.tasks.push(task);
+    this.save(); this._emit();
+  }
+
+  removeTask(idx) {
+    const cur = this.current();
+    if (!cur || idx < 0 || idx >= cur.tasks.length) return;
+    cur.tasks.splice(idx, 1);
+    this.save(); this._emit();
+  }
+
+  updateTask(idx, field, value) {
+    const cur = this.current();
+    if (!cur || idx < 0 || idx >= cur.tasks.length) return;
+    const t = cur.tasks[idx];
+    if (field === 'partners') t.partners = value.split(',').map(s=>s.trim()).filter(Boolean);
+    else if (field === 'start' || field === 'end') t[field] = parseInt(value) || 1;
+    else t[field] = value;
+    if (!t.deliverables) t.deliverables = [];
+    this.save(); this._emit();
+  }
+
+  // Deliverable CRUD
+  _findDeliverable(cmpid) {
+    const cur = this.current();
+    if (!cur) return null;
+    for (const t of cur.tasks) {
+      if (!t.deliverables) continue;
+      for (let di = 0; di < t.deliverables.length; di++) {
+        if (t.deliverables[di]._cmpid === cmpid) return {task:t, delIdx:di, del:t.deliverables[di]};
+      }
+    }
+    return null;
+  }
+
+  moveDeliverable(cmpid, newTaskId) {
+    const found = this._findDeliverable(cmpid);
+    if (!found) return;
+    const cur = this.current();
+    if (!cur) return;
+    const nt = cur.tasks.find(t => t.id === newTaskId);
+    if (!nt) return;
+    const dc = clone(found.del); delete dc._cmpid;
+    found.task.deliverables.splice(found.delIdx, 1);
+    if (!nt.deliverables) nt.deliverables = [];
+    nt.deliverables.push(dc);
+    this.save(); this._emit();
+  }
+
+  updateDeliverable(cmpid, field, value) {
+    const found = this._findDeliverable(cmpid);
+    if (!found) return;
+    if (field === 'm') found.del.m = parseInt(value) || 1;
+    else found.del[field] = value;
+    this.save(); this._emit();
+  }
+
+  removeDeliverable(cmpid) {
+    const found = this._findDeliverable(cmpid);
+    if (!found) return;
+    found.task.deliverables.splice(found.delIdx, 1);
+    this.save(); this._emit();
+  }
+
+  addDeliverable(taskId, del) {
+    const cur = this.current();
+    if (!cur) return;
+    const t = cur.tasks.find(tt => tt.id === taskId);
+    if (!t) return;
+    if (!t.deliverables) t.deliverables = [];
+    t.deliverables.push(del);
+    this.save(); this._emit();
+  }
+
+  // Data
+  getTasks() { const c = this.current(); return c ? c.tasks : []; }
+  getWPP() { const c = this.current(); return c ? c.wpParticipants : {}; }
+  getWPNames() { const c = this.current(); return (c && c.wpNames) ? c.wpNames : WP_NAMES; }
+  updateWPName(wp, name) {
+    const c = this.current();
+    if (!c) return;
+    if (!c.wpNames) c.wpNames = {...WP_NAMES};
+    c.wpNames[wp] = name;
+    this.save(); this._emit();
+  }
+  getStartDate() { const c = this.current(); return c ? c.startDate : '2024-01-01'; }
+  getKOMDate() { const c = this.current(); return c ? c.komDate : null; }
+  getMonths() { const c = this.current(); return c ? c.months : 36; }
+  getProjectName() { const c = this.current(); return c ? c.name : ''; }
+
+  getPartners() {
+    const set = new Set();
+    this.getTasks().forEach(t => (t.partners||[]).forEach(p => set.add(p)));
+    Object.values(this.getWPP()).forEach(a => a.forEach(p => set.add(p)));
+    return [...set].sort();
+  }
+
+  getAllDeliverables() {
+    const r = [];
+    this.getTasks().forEach(t => (t.deliverables||[]).forEach(d => r.push({taskId:t.id, ...d})));
+    return r;
+  }
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+const Toast = {
+  el: document.getElementById('toast'),
+  show(msg) {
+    this.el.textContent = msg;
+    this.el.classList.add('show');
+    clearTimeout(this.el._t);
+    this.el._t = setTimeout(() => this.el.classList.remove('show'), 2500);
+  }
+};
+
+// ============================================================
+// GANTT CHART RENDERER
+// ============================================================
+class GanttChart {
+  constructor(store) {
+    this.store = store;
+    this.svg = document.getElementById('gantt');
+    this.tooltip = document.getElementById('tooltip');
+    this.labelPanel = document.getElementById('label-panel');
+    this.labelList = document.getElementById('label-list');
+    this.chartPanel = document.getElementById('chart-panel');
+    this.COL_W = 22;
+    this.PAD_L = 16;
+  }
+
+  _isCollapsed(wp) {
+    const cur = this.store.current();
+    if (!cur || !cur.wpCollapsed) return false;
+    return cur.wpCollapsed[wp] === true;
+  }
+
+  _toggleCollapsed(wp) {
+    const cur = this.store.current();
+    if (!cur) return;
+    if (!cur.wpCollapsed) cur.wpCollapsed = {};
+    cur.wpCollapsed[wp] = !cur.wpCollapsed[wp];
+    this.store.save();
+    this.store._emit();
+  }
+
+  _buildGroups() {
+    const wpF = document.getElementById('wpFilter').value;
+    const ptF = document.getElementById('partnerFilter').value;
+    const allTasks = this.store.getTasks();
+
+    let visible = allTasks.filter(t =>
+      (wpF === 'all' || t.wp === wpF) &&
+      (ptF === 'all' || (t.partners||[]).includes(ptF))
+    );
+    visible.sort((a,b) => DEFAULT_WPS.indexOf(a.wp)-DEFAULT_WPS.indexOf(b.wp) || a.id.localeCompare(b.id));
+
+    const wpOrder = [...new Set(visible.map(t => t.wp))]
+      .sort((a,b) => DEFAULT_WPS.indexOf(a) - DEFAULT_WPS.indexOf(b));
+    const groups = [];
+    wpOrder.forEach(wp => {
+      groups.push({ wp, tasks: visible.filter(t => t.wp === wp), collapsed: this._isCollapsed(wp) });
+    });
+    return groups;
+  }
+
+  render() {
+    const startDate = this.store.getStartDate();
+    const months = this.store.getMonths();
+    const allTasks = this.store.getTasks();
+
+    const groups = this._buildGroups();
+    const totalTasks = groups.reduce((s,g) => s + g.tasks.length, 0);
+    document.getElementById('taskCount').textContent = totalTasks + ' tasks';
+
+    // Each group: 1 header row + (if not collapsed) task rows
+    let rowCount = 0;
+    groups.forEach(g => { rowCount += 1; if (!g.collapsed) rowCount += g.tasks.length; });
+
+    const avail = this.chartPanel.clientWidth - 14;
+    this.COL_W = Math.max(22, Math.min(48, Math.floor(avail / months)));
+    const TW = this.PAD_L + months * this.COL_W + 14;
+    const H = HEADER_H + rowCount * ROW_H + 16;
+
+    this.svg.setAttribute('width', TW);
+    this.svg.setAttribute('height', H);
+    this.svg.innerHTML = '';
+
+    this._drawGrid(months, startDate, TW, H);
+    this._drawToday(startDate, months, TW, H, rowCount);
+    this._drawKOM(startDate, months, rowCount);
+
+    let ri = 0;
+    const todayMonth = calcTodayInfo(startDate, months).month;
+    groups.forEach(g => {
+      this._drawWPHeader(g, ri, TW);
+      ri += 1;
+      if (!g.collapsed) {
+        g.tasks.forEach(row => {
+          this._drawRow(row, ri, startDate, months, todayMonth);
+          ri += 1;
+        });
+      }
+    });
+
+    this._drawLabels(groups);
+    this._drawLegend();
+    this._drawStats(allTasks);
+  }
+
+  _drawGrid(months, startDate, TW, H) {
+    const bg = el('rect', {width:TW, height:H, fill:'#fcfcfc'});
+    this.svg.appendChild(bg);
+    let prevYear = '';
+    for (let m = 1; m <= months; m++) {
+      const x = this.PAD_L + (m-1)*this.COL_W;
+      const cal = getCalMonthRef(startDate, m);
+      this.svg.appendChild(el('rect', {x, y:0, width:this.COL_W, height:H,
+        fill: m%6===1 ? '#f4f6f7' : (m%2===0 ? '#fafbfc' : '#fff'),
+        stroke:'#d5dbdb', 'stroke-width':'0.5'}));
+      this.svg.appendChild(el('text', {x: x+this.COL_W/2, y:14, 'font-size':'11px',
+        'text-anchor':'middle', fill:'#2c3e50', 'font-weight':'600'}, cal.name));
+      if (cal.year !== prevYear) {
+        this.svg.appendChild(el('text', {x: x+this.COL_W/2, y:26, 'font-size':'11px',
+          'text-anchor':'middle', fill:'#5d6d7e'}, cal.year));
+        prevYear = cal.year;
+      }
+      this.svg.appendChild(el('text', {x: x+this.COL_W/2, y:42, 'font-size':'10px',
+        'text-anchor':'middle', fill:'#5d6d7e'}, String(m)));
+      if (m>1)
+        this.svg.appendChild(el('line', {x1:x, y1:HEADER_H, x2:x, y2:H-12,
+          stroke:'#d5dbdb', 'stroke-width':'0.4'}));
+    }
+  }
+
+  _drawToday(startDate, months, TW, H, totalRows) {
+    const td = calcTodayInfo(startDate, months);
+    const tx = this.PAD_L + td.month * this.COL_W;
+    this.svg.appendChild(el('line', {x1:tx, y1:HEADER_H-6, x2:tx, y2:H-12,
+      stroke:'#ea384c', 'stroke-width':'1.5', 'stroke-dasharray':'3,3', class:'today-line'}));
+    const fy = HEADER_H - 24;
+    const flag = this._mkFlag(tx, fy, '#ea384c');
+    flag.setAttribute('class','milestone');
+    this._onTooltip(flag, `<div class="tt-title" style="color:#ea384c">Today</div>${td.label}<br>M${td.month.toFixed(1)}`);
+    this.svg.appendChild(flag);
+    this.svg.appendChild(el('text', {x:tx, y:fy-2, 'text-anchor':'middle', 'font-size':'12px',
+      fill:'#ea384c', 'font-weight':'600'}, 'Today'));
+    document.getElementById('todayInfo').textContent = td.label;
+  }
+
+  _drawKOM(startDate, months, totalRows) {
+    const KOM = this.store.getKOMDate();
+    if (!KOM) return;
+    const komStart = new Date(startDate);
+    const kom = new Date(KOM);
+    const km = (kom - komStart) / (30.436875 * 86400000);
+    if (km < 0 || km > months) return;
+    const kx = this.PAD_L + km * this.COL_W;
+
+    this.svg.appendChild(el('line', {x1:kx, y1:HEADER_H-6, x2:kx, y2:HEADER_H+ROW_H*totalRows,
+      stroke:'#1a5276', 'stroke-width':'1.5', 'stroke-dasharray':'3,3', class:'today-line'}));
+    const fy = HEADER_H - 24;
+    const flag = this._mkFlag(kx, fy, '#1a5276');
+    flag.setAttribute('class','milestone');
+    const kl = kom.toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
+      this._onTooltip(flag, `<div class="tt-title" style="color:#2c3e50">Kick-off Meeting</div>${kl}<br>M${(km).toFixed(1)}`);
+    this.svg.appendChild(flag);
+    this.svg.appendChild(el('text', {x:kx, y:fy-2, 'text-anchor':'middle', 'font-size':'12px',
+      fill:'#1a5276', 'font-weight':'600'}, 'KOM'));
+  }
+
+  _drawWPHeader(group, ri, TW) {
+    const y = HEADER_H + ri * ROW_H;
+    const color = getWPColor(group.wp);
+    const collapsed = group.collapsed;
+
+    // Background stripe for the WP header row
+    this.svg.appendChild(el('rect', {
+      x: this.PAD_L, y,
+      width: TW - this.PAD_L - 14, height: ROW_H,
+      fill: color + '12',
+      stroke: color + '25', 'stroke-width': '1'
+    }));
+
+    // Summary bar when collapsed (span from min start to max end)
+    if (collapsed && group.tasks.length) {
+      const minStart = Math.min(...group.tasks.map(t => t.start));
+      const maxEnd = Math.max(...group.tasks.map(t => t.end));
+      const bx = this.PAD_L + (minStart - 1) * this.COL_W + 2;
+      const bw = (maxEnd - minStart + 1) * this.COL_W - 4;
+      this.svg.appendChild(el('rect', {
+        x: bx, y: y + 8,
+        width: Math.max(bw, 3), height: 13,
+        rx: '6', ry: '6',
+        fill: color + '77', stroke: color, 'stroke-width': '1'
+      }));
+    }
+
+    // WP label
+    this.svg.appendChild(el('text', {
+      x: this.PAD_L + 8, y: y + ROW_H / 2 + 3,
+      'font-size': '12px', 'font-weight': '700',
+      fill: '#1a2b3c'
+    }, group.wp + ' \u2014 ' + (this.store.getWPNames()[group.wp] || group.wp) + ' (' + group.tasks.length + ' tasks)'));
+
+    // Collapse toggle
+    this.svg.appendChild(el('text', {
+      x: TW - 22, y: y + ROW_H / 2 + 3,
+      'font-size': '13px', 'font-weight': '700',
+      fill: '#2c3e50',
+      'text-anchor': 'end',
+      'cursor': 'pointer'
+    }, collapsed ? '\u25B6' : '\u25BC'));
+
+    // Clickable overlay on the entire WP header row
+    const clickArea = el('rect', {
+      x: this.PAD_L, y,
+      width: TW - this.PAD_L - 14, height: ROW_H,
+      fill: 'transparent',
+      'cursor': 'pointer'
+    });
+    clickArea.addEventListener('click', () => this._toggleCollapsed(group.wp));
+    this.svg.appendChild(clickArea);
+  }
+
+  _drawRow(row, ri, startDate, months, todayMonth) {
+    const y = HEADER_H + ri * ROW_H;
+    const ptF = document.getElementById('partnerFilter').value;
+    const color = getWPColor(row.wp);
+    const hp = ptF === 'all' || (row.partners||[]).includes(ptF);
+    const bx = this.PAD_L + (row.start-1)*this.COL_W + 2;
+    const bw = (row.end - row.start + 1) * this.COL_W - 4;
+    const bar = el('rect', {x:bx, y:y+8, width:Math.max(bw,3), height:13,
+      rx:'6', ry:'6', fill:hp?color:color+'55', stroke:color, 'stroke-width':'1', class:'bar'});
+    const pn = row.partners||[];
+    const ps = pn.slice(0,14).join(', ')+(pn.length>14?' +'+(pn.length-14)+' more':'');
+    const pi = ptF!=='all'?`<br><span class="tt-part">Filtered: ${ptF}</span>`:'';
+    const dd = (row.deliverables||[]).map(d=>`<br>\u25B8 ${d.id} (M${d.m}) \u2014 ${d.leader}: ${d.label}`).join('');
+    this._onTooltip(bar, `<div class="tt-title">${row.id}</div>${row.label}<br><span class="tt-wp">${row.wp}</span> \u00B7 M${row.start}\u2013M${row.end} \u00B7 ${pn.length} partners${pi}<br><span style="color:#85929e">${ps}</span>${dd?'<br><br><strong>Deliverables:</strong>'+dd:''}`);
+    this.svg.appendChild(bar);
+
+    const placed = {};
+    (row.deliverables||[]).forEach(d => {
+      const k = d.m;
+      const dx = this.PAD_L + (d.m-1)*this.COL_W + this.COL_W/2 + ((placed[k]||0)?12:0);
+      const dy = y + 14 - ((placed[k]||0)*16);
+      placed[k] = (placed[k]||0)+1;
+      const s = 7;
+      const isPast = d.m <= Math.floor(todayMonth);
+      const diamondFill = isPast ? '#999' : '#000';
+      const diamondStroke = isPast ? '#e8e8e8' : '#fff';
+      const textFill = isPast ? '#999' : '#000';
+      const bgFill = isPast ? '#f5f5f5' : '#fff';
+      const dia = el('polygon', {points:`${dx},${dy-s} ${dx+s},${dy} ${dx},${dy+s} ${dx-s},${dy}`,
+        fill:diamondFill, stroke:diamondStroke, 'stroke-width':'4', 'stroke-linejoin':'round', class:'milestone'});
+      const statusNote = isPast ? '<br><span style="color:#999">(delivered)</span>' : '';
+      this._onTooltip(dia, `<div class="tt-title">${d.id}</div>${d.label}<br>Leader: ${d.leader} \u00B7 M${d.m}${statusNote}`);
+      this.svg.appendChild(dia);
+      const txt = el('text', {x:dx+s+2, y:dy+2, 'font-size':'13px','font-weight':'bold',
+        fill:textFill}, d.id);
+      this.svg.appendChild(txt);
+      const bb = txt.getBBox();
+      const bg = el('rect', {x:bb.x-3, y:bb.y-2, width:bb.width+6, height:bb.height+4,
+        rx:10, ry:10, fill:bgFill});
+      this.svg.insertBefore(bg, txt);
+    });
+  }
+
+  _drawLabels(groups) {
+    const labelW = parseInt(this.labelPanel.dataset.width) || 260;
+    this.labelPanel.style.width = labelW + 'px';
+    this.labelList.innerHTML = '';
+
+    groups.forEach(g => {
+      // WP header row
+      const hdr = document.createElement('div');
+      hdr.className = 'label-wp-header';
+      hdr.style.cssText = 'background:' + getWPColor(g.wp) + '12';
+      hdr.innerHTML = '<span style="color:' + getWPColor(g.wp) + ';font-size:13px;width:16px;display:inline-block;text-align:center">' + (g.collapsed ? '\u25B6' : '\u25BC') + '</span>' +
+        '<span class="wp-badge" style="background:' + getWPColor(g.wp) + '">' + g.wp + '</span>' +
+        '<span style="color:#4f4f4f;font-size:13px;font-weight:600">' + (this.store.getWPNames()[g.wp] || g.wp) + ' <span style="color:#878787;font-weight:400">(' + g.tasks.length + ' tasks)</span></span>';
+      hdr.addEventListener('click', () => this._toggleCollapsed(g.wp));
+      this.labelList.appendChild(hdr);
+
+      if (!g.collapsed) {
+        g.tasks.forEach(row => {
+          const d = document.createElement('div'); d.className = 'label-row';
+          d.style.paddingLeft = '16px';
+          d.appendChild(dom('span', {class:'task-id'}, row.id));
+          d.appendChild(document.createTextNode(row.label));
+          this.labelList.appendChild(d);
+        });
+      }
+    });
+  }
+
+  _drawLegend() {
+    const l = document.getElementById('legend'); l.innerHTML = '';
+    const wps = [...new Set([...DEFAULT_WPS, ...this.store.getTasks().map(t=>t.wp)])];
+    wps.forEach(wp => {
+      l.appendChild(dom('span', {class:'legend-item'},
+        dom('span', {class:'legend-dot', style:`background:${getWPColor(wp)}`}),
+        document.createTextNode(wp+' '+(this.store.getWPNames()[wp]||wp))));
+    });
+    l.innerHTML += '<span class="legend-item"><span style="font-size:13px;line-height:1;color:#000;width:16px;text-align:center">\u25C6</span> Deliverable</span>';
+    l.innerHTML += '<span class="legend-item"><span class="legend-ms" style="border-bottom-color:#ea384c"></span> Today</span>';
+    l.innerHTML += '<span class="legend-item"><span class="legend-ms" style="border-bottom-color:#1a5276"></span> Kick-off</span>';
+  }
+
+  _drawStats(allTasks) {
+    const total = allTasks.length;
+    const dels = allTasks.reduce((s,t)=>s+(t.deliverables||[]).length,0);
+    document.getElementById('stats').innerHTML = `<span>${total} tasks</span><span>${dels} deliverables</span><span>${this.store.getPartners().length} partners</span><span>M1\u2013M${this.store.getMonths()}</span>`;
+  }
+
+  _onTooltip(el, html) {
+    const t = this.tooltip;
+    el.addEventListener('mouseenter', () => { t.innerHTML=html; t.classList.add('show'); });
+    el.addEventListener('mousemove', e => {
+      const cr = this.chartPanel.getBoundingClientRect();
+      let tx = e.clientX - cr.left + 14, ty = e.clientY - cr.top - 10;
+      if (tx+360 > cr.width) tx = e.clientX - cr.left - 370;
+      if (ty < 0) ty = 10;
+      t.style.left = tx+'px'; t.style.top = ty+'px';
+    });
+    el.addEventListener('mouseleave', () => t.classList.remove('show'));
+  }
+
+  _mkFlag(x, y, color) {
+    const p = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    p.setAttribute('points',`${x},${y+12} ${x+7},${y+6} ${x+7},${y} ${x-7},${y} ${x-7},${y+6}`);
+    p.setAttribute('fill',color); p.setAttribute('stroke','#1a3a5c');
+    return p;
+  }
+}
+
+// ============================================================
+// DATA EDITOR
+// ============================================================
+class DataEditor {
+  constructor(store) {
+    this.store = store;
+  }
+
+  render() {
+    this._renderWPs();
+    this._renderTasks();
+    this._renderDels();
+  }
+
+  _renderWPs() {
+    const tb = document.getElementById('wpBody');
+    tb.innerHTML = '';
+    const wpNames = this.store.getWPNames();
+    const wps = [...new Set([...DEFAULT_WPS, ...Object.keys(this.store.getWPP()), ...this.store.getTasks().map(t=>t.wp)])];
+    wps.forEach(wp => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td><span class="wp-badge" style="background:${getWPColor(wp)};font-size:12px;padding:2px 8px">${esc(wp)}</span></td>
+        <td><input type="text" value="${esc(wpNames[wp]||'')}" data-role="wpn" data-wp="${esc(wp)}" placeholder="WP name"></td>`;
+      tb.appendChild(tr);
+    });
+    tb.querySelectorAll('[data-role="wpn"]').forEach(el => el.addEventListener('change', e => {
+      this.store.updateWPName(e.target.dataset.wp, e.target.value);
+    }));
+  }
+
+  _renderTasks() {
+    const tb = document.getElementById('taskBody');
+    tb.innerHTML = '';
+    const months = this.store.getMonths();
+    const tasks = this.store.getTasks();
+    tasks.forEach((t,i) => {
+      const tr = document.createElement('tr');
+      const wps = [...new Set([...DEFAULT_WPS, ...Object.keys(this.store.getWPP()), t.wp])];
+      tr.innerHTML = `<td><input type="text" value="${esc(t.id)}" data-role="t" data-idx="${i}" data-f="id"></td>
+        <td><select data-role="t" data-idx="${i}" data-f="wp">${wps.map(w=>`<option value="${w}" ${w===t.wp?'selected':''}>${w}</option>`).join('')}</select></td>
+        <td><input type="text" value="${esc(t.label)}" data-role="t" data-idx="${i}" data-f="label"></td>
+        <td><input type="number" min="1" max="${months}" value="${t.start}" data-role="t" data-idx="${i}" data-f="start" style="width:40px"></td>
+        <td><input type="number" min="1" max="${months}" value="${t.end}" data-role="t" data-idx="${i}" data-f="end" style="width:40px"></td>
+        <td><input type="text" value="${esc((t.partners||[]).join(', '))}" data-role="t" data-idx="${i}" data-f="partners" placeholder="comma separated"></td>
+        <td class="del-row"><button class="btn btn-sm btn-danger" data-cmd="del-task" data-idx="${i}">✕</button></td>`;
+      tb.appendChild(tr);
+    });
+    tb.querySelectorAll('[data-role="t"]').forEach(el => el.addEventListener('change', e => {
+      const i = parseInt(e.target.dataset.idx);
+      this.store.updateTask(i, e.target.dataset.f, e.target.value);
+    }));
+    tb.querySelectorAll('[data-cmd="del-task"]').forEach(btn => btn.addEventListener('click', e => {
+      const i = parseInt(e.target.dataset.idx);
+      const tasks = this.store.getTasks();
+      if (confirm(`Delete task "${tasks[i].id}"?`)) { this.store.removeTask(i); Toast.show('Task deleted'); }
+    }));
+    makeColumnsResizable(document.getElementById('taskTable'));
+  }
+
+  _renderDels() {
+    const tb = document.getElementById('delBody');
+    tb.innerHTML = '';
+    const months = this.store.getMonths();
+    const tasks = this.store.getTasks();
+    const dels = this.store.getAllDeliverables();
+    dels.forEach((d,i) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td><select data-role="d" data-idx="${i}" data-f="taskId" style="max-width:70px">${tasks.map(t=>`<option value="${esc(t.id)}" ${t.id===d.taskId?'selected':''}>${esc(t.id)}</option>`).join('')}</select></td>
+        <td><input type="text" value="${esc(d.id)}" data-role="d" data-idx="${i}" data-f="id"></td>
+        <td><input type="number" min="1" max="${months}" value="${d.m}" data-role="d" data-idx="${i}" data-f="m" style="width:40px"></td>
+        <td><input type="text" value="${esc(d.leader)}" data-role="d" data-idx="${i}" data-f="leader"></td>
+        <td><input type="text" value="${esc(d.label)}" data-role="d" data-idx="${i}" data-f="label"></td>
+        <td class="del-row"><button class="btn btn-sm btn-danger" data-cmd="del-del" data-idx="${i}">✕</button></td>`;
+      tb.appendChild(tr);
+    });
+    tb.querySelectorAll('[data-role="d"]').forEach(el => el.addEventListener('change', e => {
+      const i = parseInt(e.target.dataset.idx);
+      const field = e.target.dataset.f;
+      const allDels = this.store.getAllDeliverables();
+      const d = allDels[i];
+      if (!d) return;
+      if (field === 'taskId') this.store.moveDeliverable(d._cmpid, e.target.value);
+      else this.store.updateDeliverable(d._cmpid, field, e.target.value);
+    }));
+    tb.querySelectorAll('[data-cmd="del-del"]').forEach(btn => btn.addEventListener('click', e => {
+      const i = parseInt(e.target.dataset.idx);
+      const allDels = this.store.getAllDeliverables();
+      const d = allDels[i];
+      if (d && confirm(`Delete deliverable "${d.id}"?`)) { this.store.removeDeliverable(d._cmpid); Toast.show('Deliverable deleted'); }
+    }));
+    makeColumnsResizable(document.getElementById('delTable'));
+  }
+}
+
+// ============================================================
+// COLUMN RESIZER
+// ============================================================
+function makeColumnsResizable(table) {
+  const thead = table.querySelector('thead');
+  if (!thead) return;
+  const ths = thead.querySelectorAll('tr:first-child th');
+  if (ths.length < 2) return;
+
+  // Remove inline widths from th so colgroup drives layout
+  ths.forEach(th => th.style.width = '');
+
+  // If no colgroup, create one and init from th inline widths
+  let colgroup = table.querySelector('colgroup');
+  if (!colgroup) {
+    colgroup = document.createElement('colgroup');
+    table.insertBefore(colgroup, table.firstChild);
+  }
+  // Ensure enough <col> elements
+  while (colgroup.children.length < ths.length) {
+    colgroup.appendChild(document.createElement('col'));
+  }
+
+  // Set initial widths from th inline (first call) or keep existing col widths
+  ths.forEach((th, i) => {
+    const col = colgroup.children[i];
+    const existing = col.style.width;
+    if (existing) return; // already has a persisted width
+    const inlineW = th.getAttribute('style');
+    if (inlineW) {
+      const m = inlineW.match(/width:\s*(\d+)px/);
+      if (m) col.style.width = m[1] + 'px';
+    }
+  });
+
+  // Add resizer handles to all but last column (delete button stays auto)
+  ths.forEach((th, ci) => {
+    if (ci === ths.length - 1) return; // skip delete column
+    if (th.querySelector('.col-resizer')) return;
+
+    const resizer = document.createElement('div');
+    resizer.className = 'col-resizer';
+    th.appendChild(resizer);
+
+    let startX = 0, startW = 0;
+
+    function onStart(e) {
+      e.preventDefault();
+      startX = e.clientX;
+      startW = th.getBoundingClientRect().width;
+      resizer.classList.add('resizing');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onEnd);
+    }
+
+    function onMove(e) {
+      const diff = e.clientX - startX;
+      const newW = Math.max(30, startW + diff);
+      colgroup.children[ci].style.width = newW + 'px';
+      // Force table re-layout
+      table.style.display = 'table';
+    }
+
+    function onEnd() {
+      resizer.classList.remove('resizing');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onEnd);
+    }
+
+    resizer.addEventListener('mousedown', onStart);
+  });
+}
+
+// ============================================================
+// SVG / DOM HELPER
+// ============================================================
+function el(tag, attrs, text) {
+  const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  Object.keys(attrs).forEach(k => e.setAttribute(k, attrs[k]));
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+function dom(tag, attrs, ...children) {
+  const e = document.createElement(tag);
+  Object.keys(attrs||{}).forEach(k => {
+    if (k === 'style') e.style.cssText = attrs[k];
+    else e.setAttribute(k, attrs[k]);
+  });
+  children.forEach(c => { if (typeof c === 'string') e.appendChild(document.createTextNode(c)); else e.appendChild(c); });
+  return e;
+}
+
+// ============================================================
+// APP — orchestrates everything
+// ============================================================
+class App {
+  constructor() {
+    this.store = new Store();
+    this.chart = new GanttChart(this.store);
+    this.editor = new DataEditor(this.store);
+  }
+
+  init() {
+    this.store.load();
+    this.store.subscribe(() => this._fullRender());
+
+    // Bind UI events
+    this._bindCommands();
+    this._bindFilters();
+    this._bindResize();
+    this._bindProjectSelect();
+    this._bindProjectDates();
+
+    // Initial render
+    this._fullRender();
+    console.log('App ready');
+  }
+
+  _fullRender() {
+    const cur = this.store.current();
+    if (!cur) return;
+    // Ensure deliverables have cmp ID
+    cur.tasks.forEach(t => { if(!t.deliverables) t.deliverables=[]; t.deliverables.forEach(d => { if(d._cmpid===undefined) d._cmpid=Math.random(); }); });
+    // Sync date inputs with current project
+    document.getElementById('projStartDate').value = cur.startDate || '';
+    document.getElementById('projKOMDate').value = cur.komDate || '';
+    this._renderProjectBar();
+    this.editor.render();
+    this._updateFilters();
+    this.chart.render();
+  }
+
+  _renderProjectBar() {
+    const sel = document.getElementById('projectSelect');
+    sel.innerHTML = '';
+    this.store.projects.forEach(p => {
+      const o = document.createElement('option');
+      o.value = p.id; o.textContent = p.name;
+      if (p.id === this.store.currentId) o.selected = true;
+      sel.appendChild(o);
+    });
+    const cur = this.store.current();
+    document.getElementById('projInfo').textContent = cur
+      ? `${cur.tasks.length} tasks · ${cur.tasks.reduce((s,t)=>s+(t.deliverables||[]).length,0)} deliverables · M1–M${cur.months}`
+      : '';
+  }
+
+  _updateFilters() {
+    const wpSel = document.getElementById('wpFilter');
+    const pSel = document.getElementById('partnerFilter');
+    const curWp = wpSel.value;
+    const curPt = pSel.value;
+    const tasks = this.store.getTasks();
+    const wps = [...new Set([...DEFAULT_WPS, ...tasks.map(t=>t.wp)])];
+    wpSel.innerHTML = '<option value="all">All WPs</option>';
+    wps.forEach(wp => { const o=document.createElement('option'); o.value=wp; o.textContent=wp+' — '+(this.store.getWPNames()[wp]||wp); if(wp===curWp) o.selected=true; wpSel.appendChild(o); });
+    const partners = this.store.getPartners();
+    pSel.innerHTML = '<option value="all">All Partners</option>';
+    partners.forEach(p => { const o=document.createElement('option'); o.value=p; o.textContent=p; if(p===curPt) o.selected=true; pSel.appendChild(o); });
+  }
+
+  // ---- Command dispatch ----
+  _bindCommands() {
+    document.addEventListener('click', e => {
+      const btn = e.target.closest('[data-cmd]');
+      if (!btn) return;
+      const cmd = btn.dataset.cmd;
+      // Project commands
+      if (cmd === 'project-new') {
+        const name = prompt('Project name:');
+        if (name) { this.store.addProject(name, [], {}, '2024-01-01', null, 24); Toast.show('Project "'+name+'" created'); }
+      } else if (cmd === 'project-rename') {
+        const cur = this.store.current();
+        if (!cur) return;
+        const name = prompt('New name:', cur.name);
+        if (name && name !== cur.name) { this.store.renameProject(cur.id, name); Toast.show('Renamed'); }
+      } else if (cmd === 'project-delete') {
+        const cur = this.store.current();
+        if (!cur) return;
+        if (this.store.projects.length <= 1) { alert('Cannot delete the last project.'); return; }
+        if (confirm('Delete project "'+cur.name+'"?')) { this.store.removeProject(cur.id); Toast.show('Project deleted'); }
+      } else if (cmd === 'project-clone') {
+        const cur = this.store.current();
+        if (!cur) return;
+        const name = prompt('Clone name:', cur.name+' (copy)');
+        if (name) { this.store.cloneProject(cur.id, name); Toast.show('Cloned as "'+name+'"'); }
+      } else if (cmd === 'demo-reset') {
+        const cur = this.store.current();
+        if (!cur || !confirm('Replace all tasks with demo data?')) return;
+        cur.tasks = buildDemoTasks();
+        cur.wpNames = clone(WP_NAMES);
+        cur.wpParticipants = clone(DEMO_WPP);
+        cur.startDate = '2024-05-01';
+        cur.komDate = '2024-07-01';
+        cur.months = 36;
+        this.store.save();
+        this.store._emit();
+        Toast.show('Demo data loaded');
+      } else if (cmd === 'tasks-clear') {
+        const cur = this.store.current();
+        if (!cur || !confirm('Delete all tasks?')) return;
+        cur.tasks = [];
+        this.store.save();
+        this.store._emit();
+        Toast.show('Tasks cleared');
+      } else if (cmd === 'task-add') {
+        const id = prompt('Task ID (e.g. T9.1):'); if (!id) return;
+        const wp = prompt('Work Package:'); if (!wp) return;
+        const label = prompt('Task label:'); if (!label) return;
+        const m = this.store.getMonths();
+        const s = parseInt(prompt('Start month (1-'+m+'):'),10)||1;
+        const e = parseInt(prompt('End month (1-'+m+'):'),10)||m;
+        this.store.addTask({id, wp, label, start:s, end:e, partners:[...(this.store.getWPP()[wp]||[])], deliverables:[]});
+        Toast.show('Task '+id+' added');
+      } else if (cmd === 'del-add') {
+        const tasks = this.store.getTasks();
+        if (!tasks.length) { alert('No tasks. Add a task first.'); return; }
+        const tid = prompt('Task ID (one of: '+tasks.map(t=>t.id).join(', ')+'):');
+        if (!tid) return;
+        const t = tasks.find(tt=>tt.id===tid); if (!t) { alert('Task not found'); return; }
+        const did = prompt('Deliverable ID:'); if (!did) return;
+        const m = parseInt(prompt('Month (1-'+this.store.getMonths()+'):'),10)||1;
+        const l = prompt('Leader:'); if (!l) return;
+        const lb = prompt('Deliverable label:'); if (!lb) return;
+        this.store.addDeliverable(tid, {id:did, m, leader:l, label:lb});
+        Toast.show('Deliverable '+did+' added');
+      } else if (cmd === 'export-json') {
+        const cur = this.store.current();
+        if (!cur) return;
+        const data = {projectName:cur.name, startDate:cur.startDate, komDate:cur.komDate, months:cur.months, wpNames:cur.wpNames, wpParticipants:cur.wpParticipants, tasks:cur.tasks.map(t=>{const c=clone(t); c.partners=t.partners; return c;})};
+        const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+        const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=(cur.name.replace(/\s+/g,'_')||'project')+'.json'; a.click(); URL.revokeObjectURL(a.href);
+        Toast.show('JSON exported');
+      } else if (cmd === 'import-json') {
+        document.getElementById('importFile').click();
+      } else if (cmd === 'save-html') {
+        const cur = this.store.current();
+        if (!cur) return;
+        // Build a self-contained HTML with all projects embedded
+        const html = document.documentElement.outerHTML;
+        const projectsJson = JSON.stringify(this.store.projects);
+        const embedded = html.replace(
+          '<script id="initData" type="application/json">null<' + '/script>',
+          '<script id="initData" type="application/json">' + projectsJson.replace(/<\x2fscript>/g,'<\\/script>') + '<' + '/script>'
+        );
+        const blob = new Blob(['<!DOCTYPE html>\n' + embedded], {type:'text/html;charset=utf-8'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = (cur.name || 'project') + '.html';
+        a.click();
+        URL.revokeObjectURL(a.href);
+        Toast.show('HTML saved with all project data');
+      }
+    });
+    // Import file handler
+    document.getElementById('importFile').addEventListener('change', e => {
+      const file = e.target.files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          if (!data.tasks || !Array.isArray(data.tasks)) throw new Error('Invalid format');
+          const p = this.store.addProject(data.projectName||'Imported', data.tasks, data.wpParticipants||{}, data.startDate||'2024-01-01', data.komDate||null, data.months||36, data.wpNames);
+          p.tasks.forEach(t => { if(!t.deliverables) t.deliverables=[]; if(!t.partners) t.partners=[...(p.wpParticipants[t.wp]||[])]; });
+          this.store.save();
+          this.store._emit();
+          Toast.show('Imported: '+p.name);
+        } catch(err) { alert('Invalid JSON: '+err.message); }
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+    });
+  }
+
+  _bindFilters() {
+    document.getElementById('wpFilter').addEventListener('change', () => this.chart.render());
+    document.getElementById('partnerFilter').addEventListener('change', () => this.chart.render());
+  }
+
+  _bindResize() {
+    const handle = document.getElementById('resize-handle');
+    let isR = false;
+    handle.addEventListener('mousedown', () => { isR=true; handle.classList.add('active'); document.body.style.cursor='col-resize'; document.body.style.userSelect='none'; });
+    document.addEventListener('mousemove', e => {
+      if (!isR) return;
+      const r = document.getElementById('gantt-wrapper').getBoundingClientRect();
+      let w = e.clientX - r.left - 5;
+      w = Math.max(160, Math.min(500, w));
+      document.getElementById('label-panel').dataset.width = w;
+      this.chart.render();
+    });
+    document.addEventListener('mouseup', () => { if(isR) { isR=false; handle.classList.remove('active'); document.body.style.cursor=''; document.body.style.userSelect=''; }});
+    window.addEventListener('resize', () => { if(this._rtimer) clearTimeout(this._rtimer); this._rtimer = setTimeout(() => this.chart.render(), 200); });
+  }
+
+  _bindProjectSelect() {
+    document.getElementById('projectSelect').addEventListener('change', e => {
+      this.store.setCurrent(e.target.value);
+    });
+  }
+
+  _bindProjectDates() {
+    document.getElementById('projStartDate').addEventListener('input', e => {
+      const cur = this.store.current();
+      if (!cur) return;
+      cur.startDate = e.target.value;
+      this.store.save();
+      this.store._emit();
+    });
+    document.getElementById('projKOMDate').addEventListener('input', e => {
+      const cur = this.store.current();
+      if (!cur) return;
+      cur.komDate = e.target.value || null;
+      console.log('KOM updated:', cur.komDate);
+      this.store.save();
+      this.store._emit();
+    });
+  }
+}
+
+// ============================================================
+// START
+// ============================================================
+const app = new App();
+app.init();
+</script>
+</body>
+</html>
