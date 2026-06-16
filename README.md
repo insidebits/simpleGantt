@@ -21,7 +21,7 @@ A self-contained, browser-based Gantt chart editor for managing multi-project ti
 
 ## Usage
 
-1. Open `simpleGantt.html` in any modern browser
+1. Open `index.html` in any modern browser (or visit the GitHub Pages URL)
 2. The demo project loads automatically on first use
 3. Use the toolbar buttons to create, rename, clone, or delete projects
 4. Edit WP names, tasks, and deliverables in the **Data Editor** panel below the Gantt
@@ -44,7 +44,7 @@ A self-contained, browser-based Gantt chart editor for managing multi-project ti
 ## File structure
 
 ```
-simpleGantt.html      — The complete editor (single HTML file, no dependencies)
+index.html            — The complete editor (single HTML file, no dependencies)
 sample-project.json   — Sample project data for testing/demo
 ```
 
