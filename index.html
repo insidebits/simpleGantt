@@ -107,12 +107,18 @@ table.data .del-row{width:28px;text-align:center}
 .editor-section h3{font-family:var(--font-heading);font-size:.9rem;color:var(--text-dark-2);margin-bottom:6px}
 .toast{position:fixed;bottom:24px;right:24px;background:#1a2b3c;color:#eef0f1;padding:12px 18px;border-radius:8px;font-size:.88rem;z-index:200;opacity:0;transition:opacity .3s}
 .toast.show{opacity:1}
+#visitorPanel{display:inline-flex;align-items:center;gap:5px;font-size:.82rem;color:var(--text-dark-3);white-space:nowrap}
+#visitorPanel .v-dot{width:8px;height:8px;border-radius:50%;background:#4caf50;flex-shrink:0;animation:pulse 2s infinite}
+#visitorPanel .v-dot.off{background:#ccc;animation:none}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.v-detail{display:none;position:absolute;bottom:28px;left:0;background:#fff;border:1px solid #d5dbdb;border-radius:6px;padding:6px 10px;font-size:.78rem;color:var(--text-dark-2);line-height:1.6;box-shadow:0 2px 8px rgba(0,0,0,.1);z-index:10;min-width:180px}
+#visitorPanel:hover .v-detail{display:block}
 </style>
 </head>
 <body>
 
 <h1>Simple Gantt</h1>
-<p class="sub">Manage multiple projects &mdash; add, edit, filter tasks and deliverables. <img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fsimplegantt.insidebits.dev&count_bg=%232d7ab0&title_bg=%231a3a5c&title=views&edge_flat=true" alt="visitor count" style="vertical-align:middle;margin-left:8px;height:20px" referrerpolicy="no-referrer" /></p>
+<p class="sub">Manage multiple projects &mdash; add, edit, filter tasks and deliverables.</p>
 
 <div id="projectBar">
   <select id="projectSelect"></select>
@@ -131,6 +137,11 @@ table.data .del-row{width:28px;text-align:center}
   <select id="partnerFilter"><option value="all">All Responsibles</option></select>
   <span style="color:var(--text-dark-3);font-size:.85rem" id="taskCount"></span>
   <span style="margin-left:auto"></span>
+  <span id="visitorPanel" style="position:relative;margin-right:12px">
+    <span class="v-dot"></span>
+    <span id="visitorCount"></span>
+    <div class="v-detail" id="visitorDetail"></div>
+  </span>
   <span id="todayInfo" style="font-size:.85rem;color:#2c3e50"></span>
 </div>
 
@@ -515,8 +526,80 @@ class Store {
 }
 
 // ============================================================
-// TOAST
+// VISITOR MONITOR — localStorage-based tracking
 // ============================================================
+const VS_KEY = 'ganttVisitorStats';
+
+class VisitorMonitor {
+  constructor() {
+    this.el = document.getElementById('visitorCount');
+    this.detailEl = document.getElementById('visitorDetail');
+    this.dot = document.querySelector('#visitorPanel .v-dot');
+    this.stats = this._load();
+  }
+
+  _load() {
+    try {
+      const raw = localStorage.getItem(VS_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch(e) {}
+    return { total: 0, firstVisit: null, lastVisit: null, visitsToday: 0, today: null };
+  }
+
+  _save() { localStorage.setItem(VS_KEY, JSON.stringify(this.stats)); }
+
+  track() {
+    const now = new Date();
+    const today = now.toISOString().slice(0, 10);
+
+    this.stats.total++;
+    if (!this.stats.firstVisit) this.stats.firstVisit = now.toISOString();
+    this.stats.lastVisit = now.toISOString();
+
+    if (this.stats.today !== today) {
+      this.stats.today = today;
+      this.stats.visitsToday = 1;
+    } else {
+      this.stats.visitsToday++;
+    }
+
+    this._save();
+    this.render();
+    this._startTimer();
+  }
+
+  render() {
+    if (this.el) this.el.textContent = this.stats.total + ' views';
+    if (this.detailEl) {
+      const fv = this.stats.firstVisit ? new Date(this.stats.firstVisit).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'}) : '—';
+      const lv = this.stats.lastVisit ? new Date(this.stats.lastVisit).toLocaleString('en-GB', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+      this.detailEl.innerHTML =
+        '<strong>Total views:</strong> ' + this.stats.total +
+        '<br><strong>Today:</strong> ' + this.stats.visitsToday +
+        '<br><strong>First visit:</strong> ' + fv +
+        '<br><strong>Last visit:</strong> ' + lv +
+        '<br><strong>Session:</strong> <span id="sessionTimer">0s</span>';
+    }
+  }
+
+  _startTimer() {
+    let sec = 0;
+    this._timer = setInterval(() => {
+      sec++;
+      const el = document.getElementById('sessionTimer');
+      if (el) {
+        if (sec < 60) el.textContent = sec + 's';
+        else if (sec < 3600) el.textContent = Math.floor(sec/60) + 'm ' + (sec%60) + 's';
+        else el.textContent = Math.floor(sec/3600) + 'h ' + Math.floor((sec%3600)/60) + 'm';
+      }
+      // Pulse dot every few seconds
+      if (this.dot && sec % 3 === 0) {
+        this.dot.classList.remove('off');
+        setTimeout(() => this.dot.classList.add('off'), 800);
+      }
+    }, 1000);
+  }
+}
 const Toast = {
   el: document.getElementById('toast'),
   show(msg) {
@@ -1065,6 +1148,9 @@ class App {
   init() {
     this.store.load();
     this.store.subscribe(() => this._fullRender());
+
+    this.visitor = new VisitorMonitor();
+    this.visitor.track();
 
     // Bind UI events
     this._bindCommands();
